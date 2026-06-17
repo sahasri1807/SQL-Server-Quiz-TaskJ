@@ -69,17 +69,12 @@ BEGIN
             P.LastName;
 
 
-        /*====================================================
-        STEP 2: DETAIL OUTPUT
-        ====================================================*/
-
+    -- DETAIL OUTPUT
+      
         SELECT * FROM #CustomerData;
 
-
-        /*====================================================
-        STEP 3: SUMMARY OUTPUT (NO NESTED AGGREGATES)
-        ====================================================*/
-
+    -- SUMMARY OUTPUT 
+    
         SELECT
             COUNT(*) AS TotalCustomersSubmitted,
 
