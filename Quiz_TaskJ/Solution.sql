@@ -27,10 +27,6 @@ BEGIN
 
     BEGIN TRY
 
-        /*====================================================
-        STEP 1: DETAIL DATA (STORE IN TEMP TABLE)
-        ====================================================*/
-
         IF OBJECT_ID('tempdb..#CustomerData') IS NOT NULL
             DROP TABLE #CustomerData;
 
