@@ -27,17 +27,18 @@ BEGIN
 
     BEGIN TRY
 
+        /*====================================================
+        STEP 1: DETAIL DATA (STORE IN TEMP TABLE)
+        ====================================================*/
 
--- Details
+        IF OBJECT_ID('tempdb..#CustomerData') IS NOT NULL
+            DROP TABLE #CustomerData;
 
         SELECT
             CL.CustomerID,
-
             ISNULL(P.FirstName + ' ' + P.LastName, 'Unknown') AS CustomerName,
-
             COUNT(SOH.SalesOrderID) AS TotalOrders,
-
-            ISNULL(SUM(SOH.TotalDue),0) AS TotalRevenue,
+            ISNULL(SUM(SOH.TotalDue), 0) AS TotalRevenue,
 
             CASE
                 WHEN C.CustomerID IS NULL THEN 'Invalid Customer'
@@ -52,17 +53,15 @@ BEGIN
                 ELSE 'Valid Customer'
             END AS ValidationMessage
 
-        FROM @CustomerList CL
+        INTO #CustomerData
 
+        FROM @CustomerList CL
         LEFT JOIN Sales.Customer C
             ON CL.CustomerID = C.CustomerID
-
         LEFT JOIN Person.Person P
             ON C.PersonID = P.BusinessEntityID
-
         LEFT JOIN Sales.SalesOrderHeader SOH
             ON C.CustomerID = SOH.CustomerID
-
         GROUP BY
             CL.CustomerID,
             C.CustomerID,
@@ -70,21 +69,32 @@ BEGIN
             P.LastName;
 
 
--- Summary
+        /*====================================================
+        STEP 2: DETAIL OUTPUT
+        ====================================================*/
+
+        SELECT * FROM #CustomerData;
+
+
+        /*====================================================
+        STEP 3: SUMMARY OUTPUT (NO NESTED AGGREGATES)
+        ====================================================*/
 
         SELECT
             COUNT(*) AS TotalCustomersSubmitted,
 
-            SUM(CASE WHEN C.CustomerID IS NOT NULL THEN 1 ELSE 0 END)
-                AS TotalValidCustomers,
+            SUM(CASE WHEN ValidationMessage = 'Valid Customer' THEN 1 ELSE 0 END) AS TotalValidCustomers,
 
-            SUM(CASE WHEN C.CustomerID IS NULL THEN 1 ELSE 0 END)
-                AS TotalInvalidCustomers
+            SUM(CASE WHEN ValidationMessage = 'CustomerID Not Found' THEN 1 ELSE 0 END) AS TotalInvalidCustomers,
 
-        FROM @CustomerList CL
+            SUM(CASE WHEN CustomerSegment = 'Strategic Customer' THEN 1 ELSE 0 END) AS TotalStrategicCustomers,
 
-        LEFT JOIN Sales.Customer C
-            ON CL.CustomerID = C.CustomerID;
+            SUM(CASE WHEN CustomerSegment = 'Growth Customer' THEN 1 ELSE 0 END) AS TotalGrowthCustomers,
+
+            SUM(CASE WHEN CustomerSegment = 'Standard Customer' THEN 1 ELSE 0 END) AS TotalStandardCustomers
+
+        FROM #CustomerData;
+
 
         SET @ReturnCode = 0;
 
@@ -102,5 +112,4 @@ BEGIN
 
 END;
 GO
-
 
